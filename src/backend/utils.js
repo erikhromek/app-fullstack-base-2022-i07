@@ -25,7 +25,7 @@ module.exports = {
     // If type is 2 (dimmable), state can be a float number between 0 and 1 like a dimmable light
     deviceStateIsValid: function (device, state) {
         return (device.type == 0 && [0, 1].includes(state))
-            || (device.type == 1 && Number.isInteger(state) && state > 0)
+            || (device.type == 1 && Number.isInteger(state) && state >= 0)
             || (device.type == 2 && state >= 0 && state <= 1);
     },
 };

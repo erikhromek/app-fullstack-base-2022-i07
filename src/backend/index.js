@@ -7,7 +7,7 @@ const fs = require('fs');
 var path = require('path');
 var app = express();
 var utils = require('./mysql-connector');
-const { deviceIsValid, deviceDataIsValid, deviceStateIsValid } = require('./utils');
+const { deviceIsValid, deviceDataIsValid, deviceStateIsValid, deviceExists } = require('./utils');
 
 var devices = [];
 
@@ -49,6 +49,9 @@ app.post('/device', function (req, res) {
         newDevice.id = newId;
         newDevice.state = 0; // We initialize device state
         devices.push(newDevice);
+
+        devices.sort((a,b) => a.id - b.id);
+
         res.json(devices[[devices.length - 1]]).status(200);
     }
     else {
@@ -71,14 +74,17 @@ app.post('/device/:id/state', function (req, res) {
                     return d.id != currentDevice.id;
                 });
                 devices.push(currentDevice);
+
+                devices.sort((a,b) => a.id - b.id);
+
                 res.json(currentDevice).status(200);
             }
             else {
-                res.send("State is not valid for this device.").status(400);
+                res.send({error: "State is not valid for this device."}).status(400);
             }
         }
         else {
-            res.send("Invalid format when sending state: body should be a JSON with 'state' attribute.").status(400);
+            res.send({error: "Invalid format when sending state: body should be a JSON with 'state' attribute."}).status(400);
         }
 
 
@@ -103,8 +109,8 @@ app.delete('/device/:id', function (req, res) {
         res.sendStatus(404);
 });
 
-// We use PATCH for partial updates
-app.patch('/device/:id', function (req, res) {
+// We use PUT but we allow partial updates
+app.put('/device/:id', function (req, res) {
     try {
         if (deviceExists(devices, req.params.id)) {
             if (deviceDataIsValid(req.body)) {
@@ -127,25 +133,28 @@ app.patch('/device/:id', function (req, res) {
                 devices = devices.filter(function (d) {
                     return d.id != currentDevice.id
                 });
+
                 devices.push(currentDevice);
+
+                devices.sort((a,b) => a.id - b.id);
                 res.json(currentDevice).status(200);
             }
             else {
-                res.send("Device data is invalid").status(400);
+                res.send({state: "Device data is invalid"}).status(400);
             }
         }
         else {
-            res.send("Device does not exist").status(404);
+            res.send({state: "Device does not exist"}).status(404);
         }
     }
     catch (e) {
         console.log(e);
-        res.send("An internal server error ocurred").status(500);
+        res.send({state: "An internal server error ocurred"}).status(500);
     }
 });
 
 app.listen(PORT, function (req, res) {
-    console.log("NodeJS API running correctly");
+    console.log({state: "NodeJS API running correctly"});
 });
 
 //=======[ End of file ]=======================================================
