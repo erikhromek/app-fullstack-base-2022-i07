@@ -7,16 +7,17 @@ const fs = require('fs');
 var path = require('path');
 var app = express();
 var utils = require('./mysql-connector');
-const { deviceIsValid, deviceDataIsValid, deviceStateIsValid, deviceExists } = require('./utils');
+const { deviceIsValid, deviceDataIsValid, deviceStateIsValid } = require('./utils');
 
-var devices = [];
+// We won't be using this because we have MySQL data
+var ephimeralDevices = [];
 
 fs.readFile(path.join(__dirname, 'datos.json'), 'utf8', (err, data) => {
     if (err) {
         console.log("Error loading data: " + err);
         return;
     }
-    devices = JSON.parse(data);
+    ephimeralDevices = JSON.parse(data);
     console.log("Initial data read");
 });
 
@@ -28,133 +29,172 @@ app.use(express.static('/home/node/app/static/'));
 //=======[ Main module code ]==================================================
 
 app.get('/devices', function (req, res) {
-    res.json(devices).status(200);
+
+    utils.query('SELECT id, name, description, state, type FROM `Devices`',
+        function (error, results, fields) {
+            if (error) {
+                console.log(error);
+                res.status(500).send({ state: "An internal server error ocurred" });
+            }
+            else {
+                res.status(200).send(results);
+            }
+        });
+
+
 });
 
 app.get('/device/:id', function (req, res) {
-    var devicesFiltered = devices.filter(function (d) {
-        return d.id == req.params.id
-    });
-    if (devicesFiltered.length > 0)
-        res.json(devicesFiltered[0]).status(200);
-    else
-        res.sendStatus(404);
+
+    utils.query('SELECT id, name, description, state, type FROM `Devices` where id = ?', [req.params.id],
+        function (error, results, fields) {
+            if (error) {
+                console.log(error);
+                res.status(500).send({ state: "An internal server error ocurred" });
+            }
+            else {
+                if (results.length > 0)
+                    res.status(200).json(results[0]);
+                else
+                    res.sendStatus(404);
+            }
+        });
 
 });
 
 app.post('/device', function (req, res) {
     if (deviceIsValid(req.body)) {
-        var newId = Date.now(); // For simplicity sake, we create a pseudo-random numeric id for transient devices
-        var newDevice = req.body;
-        newDevice.id = newId;
-        newDevice.state = 0; // We initialize device state
-        devices.push(newDevice);
-
-        devices.sort((a,b) => a.id - b.id);
-
-        res.json(devices[[devices.length - 1]]).status(200);
+        // We initialize device state as 0
+        utils.query('INSERT INTO `Devices`(name, description, type, state) VALUES (?, ?, ?, ?)', [req.body.name, req.body.description, req.body.type, 0],
+            function (error, results, fields) {
+                if (error) {
+                    console.log(error);
+                    res.status(500).send({ state: "An internal server error ocurred" });
+                }
+                else {
+                    res.sendStatus(200);
+                }
+            });
     }
     else {
-        res.send("Invalid device, attributes are missing").status(400);
+        res.status(400).send("Invalid device, attributes are missing");
     }
 
 });
 
 app.post('/device/:id/state', function (req, res) {
-    var devicesFiltered = devices.filter(function (d) {
-        return d.id == req.params.id
-    });
-    if (devicesFiltered.length > 0) {
-        if ('state' in req.body) {
-            var currentDevice = devicesFiltered[0];
-            if (deviceStateIsValid(currentDevice, req.body.state)) {
-                currentDevice.state = req.body.state;
-                // We remove the original device from the array and re-add it
-                devices = devices.filter(function (d) {
-                    return d.id != currentDevice.id;
-                });
-                devices.push(currentDevice);
-
-                devices.sort((a,b) => a.id - b.id);
-
-                res.json(currentDevice).status(200);
+    utils.query('SELECT id, type FROM `Devices` where id = ?', [req.params.id],
+        function (error, results, fields) {
+            if (error) {
+                console.log(error);
+                res.send({ state: "An internal server error ocurred" }).status(500);
             }
             else {
-                res.send({error: "State is not valid for this device."}).status(400);
+                if (results.length > 0) {
+                    if ('state' in req.body) {
+                        var currentDevice = results[0];
+                        if (deviceStateIsValid(currentDevice, req.body.state)) {
+                            utils.query('UPDATE `Devices` set state= ? where id= ?', [req.body.state, currentDevice.id],
+                                function (error, results, fields) {
+                                    if (error) {
+                                        console.log(error);
+                                        res.status(500).send({ state: "An internal server error ocurred while updating device state" });
+                                    }
+                                    else {
+                                        res.sendStatus(200);
+                                    }
+                                });
+                        }
+                        else {
+                            res.status(400).send({ error: "State is not valid for this device." });
+                        }
+                    }
+                    else {
+                        res.status(400).send({ error: "Invalid format when sending state: body should be a JSON with 'state' attribute." });
+                    }
+
+                }
+                else
+                    res.sendStatus(404);
             }
-        }
-        else {
-            res.send({error: "Invalid format when sending state: body should be a JSON with 'state' attribute."}).status(400);
-        }
-
-
-    }
-    else
-        res.sendStatus(404);
+        });
 });
 
 app.delete('/device/:id', function (req, res) {
-    var devicesFiltered = devices.filter(function (d) {
-        return d.id == req.params.id
-    });
-    if (devicesFiltered.length > 0) {
-        // We remove the device from the device list
-        device = devicesFiltered[0];
-        devices = devices.filter(function (d) {
-            return d.id != devicesFiltered[0].id
+    utils.query('SELECT id, type FROM `Devices` where id = ?', [req.params.id],
+        function (error, results, fields) {
+            if (error) {
+                console.log(error);
+                res.send({ state: "An internal server error ocurred" }).status(500);
+            }
+            else {
+                if (results.length > 0) {
+                    utils.query('DELETE FROM `Devices`  where id= ?', [req.params.id],
+                        function (error, results, fields) {
+                            if (error) {
+                                console.log(error);
+                                res.status(500).send({ state: "An internal server error ocurred while deleting device" });
+                            }
+                            else {
+                                res.sendStatus(200);
+                            }
+                        });
+                }
+                else
+                    res.sendStatus(404);
+            }
         });
-        res.json(device).status(200);
-    }
-    else
-        res.sendStatus(404);
 });
 
 // We use PUT but we allow partial updates
 app.put('/device/:id', function (req, res) {
     try {
-        if (deviceExists(devices, req.params.id)) {
-            if (deviceDataIsValid(req.body)) {
-
-                // We get the device
-                var currentDevice = devices.filter(function (d) {
-                    return d.id == req.params.id;
-                })[0];
-
-                if ('name' in req.body)
-                    currentDevice.name = req.body.name;
-                if ('description' in req.body)
-                    currentDevice.description = req.body.description;
-                if ('type' in req.body) {
-                    currentDevice.type = req.body.type;
-                    currentDevice.state = 0; // We reset device state when updating type
+        utils.query('SELECT id, name, description, type, state FROM `Devices` where id = ?', [req.params.id],
+            function (error, results, fields) {
+                if (error) {
+                    console.log(error);
+                    res.send({ state: "An internal server error ocurred" }).status(500);
                 }
-
-                // We remove the original device from the array and re-add it (TODO: implement real persistence)
-                devices = devices.filter(function (d) {
-                    return d.id != currentDevice.id
-                });
-
-                devices.push(currentDevice);
-
-                devices.sort((a,b) => a.id - b.id);
-                res.json(currentDevice).status(200);
-            }
-            else {
-                res.send({state: "Device data is invalid"}).status(400);
-            }
-        }
-        else {
-            res.send({state: "Device does not exist"}).status(404);
-        }
+                else {
+                    if (results.length > 0) {
+                        // We get the device
+                        var currentDevice = results[0];
+                        if ('name' in req.body)
+                            currentDevice.name = req.body.name;
+                        if ('description' in req.body)
+                            currentDevice.description = req.body.description;
+                        if ('type' in req.body) {
+                            currentDevice.type = req.body.type;
+                            currentDevice.state = 0; // We reset device state when updating type
+                        }
+                        if (deviceDataIsValid(currentDevice)) {
+                            utils.query('UPDATE `Devices` set name = ?, description = ?, type = ?, state = ? where id= ?', [currentDevice.name, currentDevice.description, currentDevice.type, currentDevice.state, req.params.id],
+                                function (error, results, fields) {
+                                    if (error) {
+                                        console.log(error);
+                                        res.status(500).send({ state: "An internal server error ocurred while updating device" });
+                                    }
+                                    else {
+                                        res.sendStatus(200);
+                                    }
+                                });
+                        }
+                        else
+                            res.status(400).send({ state: "Device data is invalid" });;
+                    }
+                    else
+                        res.sendStatus(404);
+                }
+            });
     }
     catch (e) {
         console.log(e);
-        res.send({state: "An internal server error ocurred"}).status(500);
+        res.status(500).send({ state: "An internal server error ocurred" });
     }
 });
 
 app.listen(PORT, function (req, res) {
-    console.log({state: "NodeJS API running correctly"});
+    console.log({ state: "NodeJS API running correctly" });
 });
 
 //=======[ End of file ]=======================================================

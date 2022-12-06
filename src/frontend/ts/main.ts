@@ -23,8 +23,8 @@ class Main implements EventListenerObject, HandleResponse {
             </p>
             <span>Estado actual: ${disp.state}
             </span>
-            <button current-name="${disp.name}" current-description="${disp.description}" current-type="${disp.type}" id=edit_${disp.id} class="waves-effect right purple waves-light btn-small btnEdit"><i class="material-icons left">edit</i>Borrar</button>
-            <button id=delete_${disp.id} class="waves-effect right purple waves-light btn-small btnDelete"><i class="material-icons left">delete</i>Editar</button>
+            <button current-name="${disp.name}" current-description="${disp.description}" current-type="${disp.type}" id=edit_${disp.id} class="waves-effect right purple waves-light btn-small btnEdit"><i class="material-icons left">edit</i>Editar</button>
+            <button id=delete_${disp.id} class="waves-effect right purple waves-light btn-small btnDelete"><i class="material-icons left">delete</i>Borrar</button>
             `;
       switch (disp.type) {
         case 0: {

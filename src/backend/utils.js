@@ -1,22 +1,17 @@
 module.exports = {
 
-    // Check that device id exist in our device list
-    deviceExists: function (devices, id) {
-        return devices.filter(function (d) {
-            return d.id == id
-        }).length > 0;
-    },
-
     // Check if new device has name, description and type
     deviceIsValid: function (device) {
         return 'name' in device && 'description' in device && 'type' in device;
     },
 
-    // Check if new device data is valid 
+    // Check if device new data is valid 
     deviceDataIsValid: function (device) {
-        return ('name' in device && device.name != "")
-            || ('description' in device && device.description != "")
-            || ('type' in device && [0, 1, 2].includes(device.type));
+        var validName = (!('name' in device)) || ('name' in device && device.name != "");
+        var validDescription = (!('description' in device)) || ('description' in device && device.description != "");
+        var validType = (!('type' in device)) || ('type' in device && [0, 1, 2].includes(device.type));
+
+        return validName && validDescription && validType;
     },
 
     // Check if new device state is valid
