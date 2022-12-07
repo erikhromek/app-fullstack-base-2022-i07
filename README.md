@@ -158,21 +158,55 @@ En esta sección podés ver los detalles específicos de funcionamiento del cód
 
 ### Agregar un dispositivo
 
-Completá los pasos para agregar un dispositivo desde el cliente web.
+En primer lugar, al acceder al frontend, vas a encontrar un botón en la parte superior del listado de dispositivos:
+
+![home](doc/home.png)
+
+Al seleccionarlo, se va a abrir un menú (modal) solicitando los siguientes datos:
+ - nombre
+ - descripción
+ - tipo: puede ser del tipo booleano (ON/OFF), valores discretos (0-1-2-3) o valores dimmerizables (0.00 a 1.00)
 
 ### Frontend
 
-Completá todos los detalles sobre cómo armaste el frontend, sus interacciones, etc.
+El frontend se compone un componente principal denominado <b>Main</b> que se encarga de:
+  1. inicializar dispositivos (función <i>consultarDispositivosAlServidor</i>)
+  2. configurar <i>event listener</i> para los principales eventos (son 5, en el <b>main.ts</b> se encuentra la función)
+  3. atender diferentes eventos de acciones en la webapp
+
+Además, el componente principal utiliza otro componente (<b>Framework</b>) para delegar todas las peticiones (<i>GET,POST,PUT,DELETE, etc.</i>) al backend. Este componente además, gestiona algunas características visuales como las alertas o mensajes emergentes.
+
+Para editar los dispositivos, se atiende el evento de edición y se setean las variables del dispositivo en el modal de edición, junto con su ID para posterior guardado en el backend.
+
 
 ### Backend
 
-Completá todos los detalles de funcionamiento sobre el backend, sus interacciones con el cliente web, la base de datos, etc.
+El backend se encuentra conformado por un <i>index.js</i> que contiene todas las funcionalidades requeridas:
+  1. obtener todos los dispositivos
+  2. obtener un dispositivo
+  3. cargar un dispositivo
+  4. actualizar el estado de un dispositivo
+  5. modificar los datos de un dispositivo
+  6. eliminar un dispositivo
+
+Además, se encuentran disponibles algunas validaciones en el archivo <i>utils.js</i> que facilitan la verificación de los datos recibidos por los endpoints (ver si los datos del dispositivo son válidos, ver si el estado es válido, etc.).
+
+Con respecto a las validaciones, cada endpoint valida y devuelve los estados correspondientes (junto a un mensaje descriptivo) como:
+  - 404 si el dispositivo no existe
+  - 400 si la información no es valida
+  - 500 si hubo otro error interno
+  - 200 si se pudo llevar a cabo la operación
+
+Por ejemplo, si se actualiza el estado de un dispositivo del tipo 0 (ON/OFF) el estado no puede ser 0.5, debe ser 0 o 1 solamente.
+Otro caso de ejemplo, si se actualiza el nombre y/o descripción de un dispositivo (la actualización de datos puede ser total o parcial), los campos no pueden estar vacíos.
+
+Por último, todo se encuentra almacenado en una base de datos MySQL persistente.
 
 <details><summary><b>Ver los endpoints disponibles</b></summary><br>
 
 Completá todos los endpoints del backend con los metodos disponibles, los headers y body que recibe, lo que devuelve, ejemplos, etc.
 
-1) Devolver el estado de los dispositivos.
+1) Devolver el estado de los dispositivos (<b><i>/devices</i></b>)
 
 ```json
 {
@@ -180,22 +214,97 @@ Completá todos los endpoints del backend con los metodos disponibles, los heade
     "request_headers": "application/json",
     "request_body": "",
     "response_code": 200,
-    "request_body": {
-        "devices": [
+    "request_body":
+        [
             {
                 "id": 1,
-                "status": true,
-                "description": "Kitchen light"
+                "status": 0,
+                "description": "Kitchen light",
+                "name": "Device 1",
+                "type": 1
             }
         ]
-    },
+}
+``` 
+
+2) Devolver el estado de un dispositivo (<b><i>/device/\<id\></i></b>)
+
+```json
+{
+    "method": "get",
+    "request_headers": "application/json",
+    "request_body": "",
+    "response_code": 200,
+    "request_body":
+            {
+                "id": 1,
+                "status": 0,
+                "description": "Kitchen light",
+                "name": "Device 1",
+                "type": 1
+            }
+}
+``` 
+
+3) Crear un dispositivo (<b><i>/device</i></b>)
+
+```json
+{
+    "method": "post",
+    "request_headers": "application/json",
+    "request_body": 
+        {
+            "name": "Device 1",
+            "description": "Kitchen light",
+            "type": 1
+        },
+    "response_code": 200,
+    "request_body": ""
+}
+``` 
+
+4) Actualizar el estado de un dispositivo (<b><i>/device/\<id\>/state</i></b>)
+
+```json
+{
+    "method": "post",
+    "request_headers": "application/json",
+    "request_body": 
+        {
+            "state": 0,
+        },
+    "response_code": 200,
+    "request_body": ""
+}
+``` 
+
+5) Borrar un dispositivo (<b><i>/device/\<id\></i></b>)
+
+```json
+{
+    "method": "delete",
+    "request_headers": "application/json",
+    "request_body": "",
+    "response_code": 200,
+    "request_body": ""
+}
+``` 
+
+6) Actualizar un dispositivo (<b><i>/device/\<id\></i></b>)
+
+```json
+{
+    "method": "put",
+    "request_headers": "application/json",
+    "request_body": "",
+    "response_code": 200,
+    "request_body": ""
 }
 ``` 
 
 </details>
 
 </details>
-
 
 ## Tecnologías utilizadas 🛠️
 

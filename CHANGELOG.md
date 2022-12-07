@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 3.0.0
+
+* Project modification
+    * Introduce three device type with endpoints and validation
+    * Implements and refactors device management
+    * Implements frontend styling
+    * Adds new info to README accordingly
 
 ## 2.2.0
 

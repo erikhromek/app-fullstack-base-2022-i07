@@ -1,35 +1,6 @@
 class Framework {
   backendURL = "http://localhost:8000";
 
-  public ejecutarRequest(
-    metodo: string,
-    url: string,
-    responseHandler: HandleResponse,
-    data?: any
-  ) {
-    let xmlHttp = new XMLHttpRequest();
-
-    xmlHttp.onreadystatechange = () => {
-      if (xmlHttp.readyState == 4) {
-        if (xmlHttp.status == 200) {
-          let listaDisp: Array<Device> = JSON.parse(xmlHttp.responseText);
-          responseHandler.cargarGrilla(listaDisp);
-        } else {
-          this.mostrarAlerta(
-            "Hubo un error al comunicarse con el servidor: " + xmlHttp.status
-          );
-        }
-      }
-    };
-    xmlHttp.open(metodo, url, true);
-    if (data != undefined) {
-      xmlHttp.setRequestHeader("Content-Type", "application/json");
-      xmlHttp.send(JSON.stringify(data));
-    } else {
-      xmlHttp.send();
-    }
-  }
-
   public getDevices(responseHandler: HandleResponse) {
     let xmlHttp = new XMLHttpRequest();
 
@@ -39,9 +10,7 @@ class Framework {
           let listaDisp: Array<Device> = JSON.parse(xmlHttp.responseText);
           responseHandler.cargarGrilla(listaDisp);
         } else {
-          this.mostrarAlerta(
-            "Hubo un error al comunicarse con el servidor: " + xmlHttp.status
-          );
+          this.mostrarAlerta("Hubo un error al comunicarse con el servidor: " + xmlHttp.status);
         }
       }
     };
@@ -59,9 +28,7 @@ class Framework {
           this.mostrarAlerta(`Dispositivo ${id} actualizado`);
           return;
         } else {
-          this.mostrarAlerta(
-            "Hubo un error al comunicarse con el servidor:" + xmlHttp.status
-          );
+          this.mostrarAlerta("Hubo un error al comunicarse con el servidor:" + xmlHttp.status);
         }
       }
     };
@@ -83,9 +50,7 @@ class Framework {
           responseHandler.clearNewDeviceForm();
           return;
         } else {
-          this.mostrarAlerta(
-            "Hubo un error al comunicarse con el servidor:" + xmlHttp.status
-          );
+          this.mostrarAlerta("Hubo un error al comunicarse con el servidor:" + xmlHttp.status);
         }
       }
     };
@@ -102,9 +67,7 @@ class Framework {
           this.mostrarAlerta(`Dispositivo ${id} eliminado`);
           return;
         } else {
-          this.mostrarAlerta(
-            "Hubo un error al comunicarse con el servidor: " + xmlHttp.status
-          );
+          this.mostrarAlerta("Hubo un error al comunicarse con el servidor: " + xmlHttp.status);
         }
       }
     };
@@ -112,12 +75,7 @@ class Framework {
     xmlHttp.send();
   }
 
-  public createDevice(
-    name: string,
-    description: string,
-    type: number,
-    responseHandler: HandleResponse
-  ) {
+  public createDevice(name: string, description: string, type: number, responseHandler: HandleResponse) {
     let xmlHttp = new XMLHttpRequest();
     let device = new Device(name, description, type);
     xmlHttp.onreadystatechange = () => {
@@ -127,9 +85,7 @@ class Framework {
           responseHandler.clearNewDeviceForm();
           return;
         } else {
-          this.mostrarAlerta(
-            "Hubo un error al comunicarse con el servidor: " + xmlHttp.status
-          );
+          this.mostrarAlerta("Hubo un error al comunicarse con el servidor: " + xmlHttp.status);
         }
       }
     };
